@@ -59,15 +59,14 @@ const VirtualizedCommand = ({
   const virtualItems = rowVirtualizer.getVirtualItems();
 
   const handleSearch = (value: string) => {
-    return setItems(() =>
-      initialItems.filter((item) =>
-        item.value.toLowerCase().includes(value.toLowerCase() ?? [])
-      )
+    const items = initialItems.filter((item) =>
+      item.value.toLowerCase().includes(value.toLowerCase() ?? [])
     );
+    setItems(items);
   };
 
   return (
-    <Command>
+    <Command shouldFilter={false}>
       <CommandInput
         onValueChange={handleSearch}
         placeholder="Search items..."
