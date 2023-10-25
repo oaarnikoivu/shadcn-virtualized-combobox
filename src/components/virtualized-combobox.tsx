@@ -65,8 +65,14 @@ const VirtualizedCommand = ({
     setItems(items);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+    }
+  };
+
   return (
-    <Command shouldFilter={false}>
+    <Command shouldFilter={false} onKeyDown={handleKeyDown}>
       <CommandInput
         onValueChange={handleSearch}
         placeholder="Search items..."
