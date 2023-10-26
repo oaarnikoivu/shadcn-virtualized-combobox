@@ -16,53 +16,45 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, ChevronsUpDown } from "lucide-react";
 import * as React from "react";
 
-function generateRandomStrings() {
-  const items = new Set<string>();
-  while (items.size < 100000) {
-    const randomString = Math.random().toString(36).substr(2, 10);
-    items.add(randomString);
-  }
-  return Array.from(items);
-}
-
-const randomStrings: string[] = generateRandomStrings();
-
-type Item = {
+type Option = {
   value: string;
   label: string;
 };
 
-const initialItems: Item[] = randomStrings.map((item) => ({
-  value: item,
-  label: item,
-}));
-
 interface VirtualizedCommandProps {
-  value: string;
-  onSelectItem?: (value: string) => void;
+  height: string;
+  options: Option[];
+  placeholder: string;
+  selectedOption: string;
+  onSelectOption?: (option: string) => void;
 }
 
 const VirtualizedCommand = ({
-  value,
-  onSelectItem,
+  height,
+  options,
+  placeholder,
+  selectedOption,
+  onSelectOption,
 }: VirtualizedCommandProps) => {
-  const [items, setItems] = React.useState<Item[]>(initialItems);
+  const [filteredOptions, setFilteredOptions] =
+    React.useState<Option[]>(options);
   const parentRef = React.useRef(null);
 
-  const rowVirtualizer = useVirtualizer({
-    count: items.length,
+  const virtualizer = useVirtualizer({
+    count: filteredOptions.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 35,
     overscan: 5,
   });
 
-  const virtualItems = rowVirtualizer.getVirtualItems();
+  const virtualOptions = virtualizer.getVirtualItems();
 
-  const handleSearch = (value: string) => {
-    const items = initialItems.filter((item) =>
-      item.value.toLowerCase().includes(value.toLowerCase() ?? [])
+  const handleSearch = (search: string) => {
+    setFilteredOptions(
+      options.filter((option) =>
+        option.value.toLowerCase().includes(search.toLowerCase() ?? [])
+      )
     );
-    setItems(items);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -73,47 +65,46 @@ const VirtualizedCommand = ({
 
   return (
     <Command shouldFilter={false} onKeyDown={handleKeyDown}>
-      <CommandInput
-        onValueChange={handleSearch}
-        placeholder="Search items..."
-      />
+      <CommandInput onValueChange={handleSearch} placeholder={placeholder} />
       <CommandEmpty>No item found.</CommandEmpty>
       <CommandGroup
         ref={parentRef}
         style={{
-          height: "200px",
+          height: height,
           width: "100%",
           overflow: "auto",
         }}
       >
         <div
           style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
+            height: `${virtualizer.getTotalSize()}px`,
             width: "100%",
             position: "relative",
           }}
         >
-          {virtualItems.map((row) => (
+          {virtualOptions.map((virtualOption) => (
             <CommandItem
               style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 width: "100%",
-                height: `${row.size}px`,
-                transform: `translateY(${row.start}px)`,
+                height: `${virtualOption.size}px`,
+                transform: `translateY(${virtualOption.start}px)`,
               }}
-              key={items[row.index].value}
-              value={items[row.index].value}
-              onSelect={onSelectItem}
+              key={filteredOptions[virtualOption.index].value}
+              value={filteredOptions[virtualOption.index].value}
+              onSelect={onSelectOption}
             >
               <Check
                 className={cn(
                   "mr-2 h-4 w-4",
-                  value === items[row.index].value ? "opacity-100" : "opacity-0"
+                  selectedOption === filteredOptions[virtualOption.index].value
+                    ? "opacity-100"
+                    : "opacity-0"
                 )}
               />
-              {items[row.index].label}
+              {filteredOptions[virtualOption.index].label}
             </CommandItem>
           ))}
         </div>
@@ -122,9 +113,21 @@ const VirtualizedCommand = ({
   );
 };
 
-export function VirtualizedCombobox() {
+interface VirtualizedComboboxProps {
+  options: string[];
+  searchPlaceholder?: string;
+  width?: string;
+  height?: string;
+}
+
+export function VirtualizedCombobox({
+  options,
+  searchPlaceholder = "Search items...",
+  width = "400px",
+  height = "400px",
+}: VirtualizedComboboxProps) {
   const [open, setOpen] = React.useState<boolean>(false);
-  const [value, setValue] = React.useState<string>("");
+  const [selectedOption, setSelectedOption] = React.useState<string>("");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -133,19 +136,27 @@ export function VirtualizedCombobox() {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className="justify-between"
+          style={{
+            width: width,
+          }}
         >
-          {value
-            ? initialItems.find((item) => item.value === value)?.label
-            : "Select item..."}
+          {selectedOption
+            ? options.find((option) => option === selectedOption)
+            : searchPlaceholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className="p-0" style={{ width: width }}>
         <VirtualizedCommand
-          value={value}
-          onSelectItem={(currentValue) => {
-            setValue(currentValue === value ? "" : currentValue);
+          height={height}
+          options={options.map((option) => ({ value: option, label: option }))}
+          placeholder={searchPlaceholder}
+          selectedOption={selectedOption}
+          onSelectOption={(currentValue) => {
+            setSelectedOption(
+              currentValue === selectedOption ? "" : currentValue
+            );
             setOpen(false);
           }}
         />
