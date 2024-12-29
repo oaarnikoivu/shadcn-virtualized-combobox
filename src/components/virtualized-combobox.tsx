@@ -5,6 +5,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList
 } from "@/components/ui/command";
 import {
   Popover,
@@ -65,50 +66,52 @@ const VirtualizedCommand = ({
 
   return (
     <Command shouldFilter={false} onKeyDown={handleKeyDown}>
-      <CommandInput onValueChange={handleSearch} placeholder={placeholder} />
-      <CommandEmpty>No item found.</CommandEmpty>
-      <CommandGroup
-        ref={parentRef}
-        style={{
-          height: height,
-          width: "100%",
-          overflow: "auto",
-        }}
-      >
-        <div
+      <CommandList>
+        <CommandInput onValueChange={handleSearch} placeholder={placeholder} />
+        <CommandEmpty>No item found.</CommandEmpty>
+        <CommandGroup
+          ref={parentRef}
           style={{
-            height: `${virtualizer.getTotalSize()}px`,
+            height: height,
             width: "100%",
-            position: "relative",
+            overflow: "auto",
           }}
         >
-          {virtualOptions.map((virtualOption) => (
-            <CommandItem
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: `${virtualOption.size}px`,
-                transform: `translateY(${virtualOption.start}px)`,
-              }}
-              key={filteredOptions[virtualOption.index].value}
-              value={filteredOptions[virtualOption.index].value}
-              onSelect={onSelectOption}
-            >
-              <Check
-                className={cn(
-                  "mr-2 h-4 w-4",
-                  selectedOption === filteredOptions[virtualOption.index].value
-                    ? "opacity-100"
-                    : "opacity-0"
-                )}
-              />
-              {filteredOptions[virtualOption.index].label}
-            </CommandItem>
-          ))}
-        </div>
-      </CommandGroup>
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: "100%",
+              position: "relative",
+            }}
+          >
+            {virtualOptions.map((virtualOption) => (
+              <CommandItem
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: `${virtualOption.size}px`,
+                  transform: `translateY(${virtualOption.start}px)`,
+                }}
+                key={filteredOptions[virtualOption.index].value}
+                value={filteredOptions[virtualOption.index].value}
+                onSelect={onSelectOption}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    selectedOption === filteredOptions[virtualOption.index].value
+                      ? "opacity-100"
+                      : "opacity-0"
+                  )}
+                />
+                {filteredOptions[virtualOption.index].label}
+              </CommandItem>
+            ))}
+          </div>
+        </CommandGroup>
+      </CommandList>
     </Command>
   );
 };
