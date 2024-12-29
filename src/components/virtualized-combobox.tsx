@@ -5,7 +5,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -39,13 +39,14 @@ const VirtualizedCommand = ({
 }: VirtualizedCommandProps) => {
   const [filteredOptions, setFilteredOptions] =
     React.useState<Option[]>(options);
+  const [highlightedIndex, setHighlightedIndex] = React.useState<number>(0);
+  const [shouldScroll, setShouldScroll] = React.useState(false);
   const parentRef = React.useRef(null);
 
   const virtualizer = useVirtualizer({
     count: filteredOptions.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 35,
-    overscan: 5,
   });
 
   const virtualOptions = virtualizer.getVirtualItems();
@@ -59,24 +60,49 @@ const VirtualizedCommand = ({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    if (event.key === "ArrowDown") {
       event.preventDefault();
+      setShouldScroll(true);
+      setHighlightedIndex((prev) =>
+        Math.min(prev + 1, filteredOptions.length - 1)
+      );
+    } else if (event.key === "ArrowUp") {
+      setShouldScroll(true);
+      event.preventDefault();
+      setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      if (filteredOptions[highlightedIndex]) {
+        onSelectOption?.(filteredOptions[highlightedIndex].value);
+      }
     }
   };
 
+  React.useEffect(() => {
+    if (!shouldScroll) return;
+
+    if (highlightedIndex !== null) {
+      virtualizer.scrollToIndex(highlightedIndex, {
+        align: "center",
+      });
+    }
+
+    setShouldScroll(false);
+  }, [highlightedIndex, virtualizer, shouldScroll]);
+
   return (
     <Command shouldFilter={false} onKeyDown={handleKeyDown}>
-      <CommandList>
-        <CommandInput onValueChange={handleSearch} placeholder={placeholder} />
+      <CommandInput onValueChange={handleSearch} placeholder={placeholder} />
+      <CommandList
+        ref={parentRef}
+        style={{
+          height: height,
+          width: "100%",
+          overflow: "auto",
+        }}
+      >
         <CommandEmpty>No item found.</CommandEmpty>
-        <CommandGroup
-          ref={parentRef}
-          style={{
-            height: height,
-            width: "100%",
-            overflow: "auto",
-          }}
-        >
+        <CommandGroup>
           <div
             style={{
               height: `${virtualizer.getTotalSize()}px`,
@@ -86,22 +112,27 @@ const VirtualizedCommand = ({
           >
             {virtualOptions.map((virtualOption) => (
               <CommandItem
+                className={cn(
+                  "absolute left-0 top-0 w-full bg-transparent",
+                  highlightedIndex === virtualOption.index && "bg-accent"
+                )}
                 style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
                   height: `${virtualOption.size}px`,
                   transform: `translateY(${virtualOption.start}px)`,
                 }}
                 key={filteredOptions[virtualOption.index].value}
                 value={filteredOptions[virtualOption.index].value}
                 onSelect={onSelectOption}
+                onMouseMove={() => {
+                  setShouldScroll(false);
+                  setHighlightedIndex(virtualOption.index);
+                }}
               >
                 <Check
                   className={cn(
                     "mr-2 h-4 w-4",
-                    selectedOption === filteredOptions[virtualOption.index].value
+                    selectedOption ===
+                      filteredOptions[virtualOption.index].value
                       ? "opacity-100"
                       : "opacity-0"
                   )}

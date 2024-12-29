@@ -1,16 +1,15 @@
 import "./App.css";
 import { VirtualizedCombobox } from "./components/virtualized-combobox";
 
-function generateRandomStrings() {
-  const items = new Set<string>();
-  while (items.size < 20000) {
-    const randomString = Math.random().toString(36).substr(2, 10);
-    items.add(randomString);
+function generateItems() {
+  const items: string[] = [];
+  for (let i = 1; i <= 20000; i++) {
+    items.push(`item ${i}`);
   }
-  return Array.from(items);
+  return items;
 }
 
-const initialOptions: string[] = generateRandomStrings();
+const initialOptions: string[] = generateItems();
 
 function App() {
   return <VirtualizedCombobox options={initialOptions} />;
