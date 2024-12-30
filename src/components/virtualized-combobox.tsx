@@ -39,8 +39,9 @@ const VirtualizedCommand = ({
 }: VirtualizedCommandProps) => {
   const [filteredOptions, setFilteredOptions] =
     React.useState<Option[]>(options);
-  const [highlightedIndex, setHighlightedIndex] = React.useState<number>(0);
-  const [shouldScroll, setShouldScroll] = React.useState(false);
+  const [focusedIndex, setFocusedIndex] = React.useState(0);
+  const [isKeyboardNavActive, setIsKeyboardNavActive] = React.useState(false);
+
   const parentRef = React.useRef(null);
 
   const virtualizer = useVirtualizer({
@@ -51,7 +52,14 @@ const VirtualizedCommand = ({
 
   const virtualOptions = virtualizer.getVirtualItems();
 
+  const scrollToIndex = (index: number) => {
+    virtualizer.scrollToIndex(index, {
+      align: "center",
+    });
+  };
+
   const handleSearch = (search: string) => {
+    setIsKeyboardNavActive(false);
     setFilteredOptions(
       options.filter((option) =>
         option.value.toLowerCase().includes(search.toLowerCase() ?? [])
@@ -60,35 +68,55 @@ const VirtualizedCommand = ({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setShouldScroll(true);
-      setHighlightedIndex((prev) =>
-        Math.min(prev + 1, filteredOptions.length - 1)
-      );
-    } else if (event.key === "ArrowUp") {
-      setShouldScroll(true);
-      event.preventDefault();
-      setHighlightedIndex((prev) => Math.max(prev - 1, 0));
-    } else if (event.key === "Enter") {
-      event.preventDefault();
-      if (filteredOptions[highlightedIndex]) {
-        onSelectOption?.(filteredOptions[highlightedIndex].value);
+    switch (event.key) {
+      case "ArrowDown": {
+        event.preventDefault();
+        setIsKeyboardNavActive(true);
+        setFocusedIndex((prev) => {
+          const newIndex =
+            prev === -1 ? 0 : Math.min(prev + 1, filteredOptions.length - 1);
+          scrollToIndex(newIndex);
+          return newIndex;
+        });
+        break;
       }
+      case "ArrowUp": {
+        event.preventDefault();
+        setIsKeyboardNavActive(true);
+        setFocusedIndex((prev) => {
+          const newIndex =
+            prev === -1 ? filteredOptions.length - 1 : Math.max(prev - 1, 0);
+          scrollToIndex(newIndex);
+          return newIndex;
+        });
+        break;
+      }
+      case "Enter": {
+        event.preventDefault();
+        if (filteredOptions[focusedIndex]) {
+          onSelectOption?.(filteredOptions[focusedIndex].value);
+        }
+        break;
+      }
+      default:
+        break;
     }
   };
 
   React.useEffect(() => {
-    if (!shouldScroll) return;
-
-    if (highlightedIndex !== null) {
-      virtualizer.scrollToIndex(highlightedIndex, {
-        align: "center",
-      });
+    if (selectedOption) {
+      const option = filteredOptions.find(
+        (option) => option.value === selectedOption
+      );
+      if (option) {
+        const index = filteredOptions.indexOf(option);
+        setFocusedIndex(index);
+        virtualizer.scrollToIndex(index, {
+          align: "center",
+        });
+      }
     }
-
-    setShouldScroll(false);
-  }, [highlightedIndex, virtualizer, shouldScroll]);
+  }, [selectedOption, filteredOptions, virtualizer]);
 
   return (
     <Command shouldFilter={false} onKeyDown={handleKeyDown}>
@@ -100,6 +128,8 @@ const VirtualizedCommand = ({
           width: "100%",
           overflow: "auto",
         }}
+        onMouseDown={() => setIsKeyboardNavActive(false)}
+        onMouseMove={() => setIsKeyboardNavActive(false)}
       >
         <CommandEmpty>No item found.</CommandEmpty>
         <CommandGroup>
@@ -112,21 +142,26 @@ const VirtualizedCommand = ({
           >
             {virtualOptions.map((virtualOption) => (
               <CommandItem
+                key={filteredOptions[virtualOption.index].value}
+                disabled={isKeyboardNavActive}
                 className={cn(
                   "absolute left-0 top-0 w-full bg-transparent",
-                  highlightedIndex === virtualOption.index && "bg-accent"
+                  focusedIndex === virtualOption.index &&
+                    "bg-accent text-accent-foreground",
+                  isKeyboardNavActive &&
+                    focusedIndex !== virtualOption.index &&
+                    "aria-selected:bg-transparent aria-selected:text-primary"
                 )}
                 style={{
                   height: `${virtualOption.size}px`,
                   transform: `translateY(${virtualOption.start}px)`,
                 }}
-                key={filteredOptions[virtualOption.index].value}
                 value={filteredOptions[virtualOption.index].value}
+                onMouseEnter={() =>
+                  !isKeyboardNavActive && setFocusedIndex(virtualOption.index)
+                }
+                onMouseLeave={() => !isKeyboardNavActive && setFocusedIndex(-1)}
                 onSelect={onSelectOption}
-                onMouseMove={() => {
-                  setShouldScroll(false);
-                  setHighlightedIndex(virtualOption.index);
-                }}
               >
                 <Check
                   className={cn(
@@ -160,8 +195,8 @@ export function VirtualizedCombobox({
   width = "400px",
   height = "400px",
 }: VirtualizedComboboxProps) {
-  const [open, setOpen] = React.useState<boolean>(false);
-  const [selectedOption, setSelectedOption] = React.useState<string>("");
+  const [open, setOpen] = React.useState(false);
+  const [selectedOption, setSelectedOption] = React.useState("");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
