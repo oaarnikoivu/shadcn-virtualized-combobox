@@ -1,5 +1,5 @@
-import "./App.css";
-import { VirtualizedCombobox } from "./components/virtualized-combobox";
+import './App.css';
+import { VirtualizedCombobox } from './components/virtualized-combobox';
 
 function generateItems() {
   const items: string[] = [];
