@@ -10,5 +10,5 @@
 ## Installation
 
 ```
-npx shadcn@latest add http://oaarnikoivu.com/r/virtualized-combobox.json
+npx shadcn@latest add https://oaarnikoivu.com/r/virtualized-combobox.json
 ```
