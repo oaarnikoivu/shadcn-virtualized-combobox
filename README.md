@@ -6,3 +6,9 @@
 
 - [shadcn/ui Combobox](https://ui.shadcn.com/docs/components/combobox)
 - [TanStack Virtual](https://tanstack.com/virtual/latest/docs/introduction)
+
+## Installation
+
+```
+npx shadcn@latest add http://oaarnikoivu.com/r/virtualized-combobox.json
+```
